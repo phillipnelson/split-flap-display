@@ -1,0 +1,104 @@
+split-flap.jquery.js
+
+Author: J. Phillip Nelson		http://jpnelson.com
+
+
+ABOUT
+-------
+
+This is a super simple JQuery plugin to display feeds of information as an N-N grid of characters simulating a split-flap display board.
+
+http://en.wikipedia.org/wiki/Split-flap_display
+
+Right now, the transition for each character is a simple text change, or a CSS3 3-D rotiation on the X-axis. 
+
+TODO: The 3-D transition is a little slow, so the goal will be to write a really awesome one that will work on a much smaller 8x1 grid. 
+
+USAGE
+-------
+
+// Initiate feed
+var display = $('#solari-feed').splitflap();
+
+// The feed can be a list of titles
+var news = ['A','B','C'];
+
+// Or a list of url,title tuples
+var news = [['http://example.com/A','A'],['http://example.com/B','B']];
+
+// Pass in a feed of titles to cycle through
+display.cycle(news);
+
+// Or you can always just write a title
+display.write('Hello!');
+
+OPTIONS
+--------
+
+speed: 60,
+rotationSpeed: 50, 
+cycleSpeed: 10000,
+rows: 4, 
+columns: 39,
+characters: " ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.!@#$%^&*¡§®µ¶¼½¾¿".split(''),
+default_character: " ",				// Starting character
+cssClass: "split-flap-line",
+attrName: "split-flap-character",
+transform: false					// Use a 3-D Transition
+
+
+CSS (to get started...)
+------
+
+.split-flap-line {
+	list-style-type: none;
+	-webkit-padding-start: 0;
+	-webkit-margin-after: 0;
+	padding-bottom: 2px;
+	margin-top: 0;
+}
+
+.split-flap-line:last-child {	padding-bottom: 0;		}
+		
+
+.split-flap-link {		cursor: pointer;		}
+
+.split-flap-line li, .split-flap-line li .split-flap-new {
+	background: #333;
+	color: #EEE;
+	width: 16px;
+	height: 24px;
+	font-size: 18px;
+	text-align: center;
+	line-height: 26px;
+	vertical-align: top;
+			
+}
+
+.split-flap-line li {
+	border: 1px solid black;
+	display: inline-block;
+	margin-right: 2px;
+	position: relative;
+	z-index: 8000;
+}
+
+.split-flap-line li .split-flap-new {
+	z-index: 9000;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.split-flap-line li:last-child {
+	margin-right: 0px;
+}
+
+
+THANKS
+
+-------
+
+A special thanks to authors of TransformJS (included in plugin).
+http://transformjs.strobeapp.com/
+
