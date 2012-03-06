@@ -16,28 +16,15 @@
 				columns: 39,
 				characters: " ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.!@#$%^&*¡§®µ¶¼½¾¿".split(''),
 				default_character: " ",
+				blank_character: " ",
 				cssClass: "split-flap-line",
 				attrName: "split-flap-character",
-				transform: false
+				transform: false,
 			}
 			
 			var options = $.extend(defaults, options);
-				
-			var rotate_to_character = function(div,character) {
-				var current_character =  div.attr(options.attrName);
-				if(!character in options.characters || character == current_character) return;
-				var position = options.characters.indexOf(current_character);
-				var t = setInterval(function(){	
-					position++
-					if(position >= options.characters.length) position = 0;
-					var current_character = options.characters[position];
-					div.attr(options.attrName,current_character);
-					rotate_character(div,current_character);
-					if(current_character == character)	clearInterval(t);
-				},options.speed);
-			}
 
-			var rotate_character = function(div,character) {
+			var animate_rotation = function(div,character) {
 				if(options.transform) {
 					var old_character = $("<div>").addClass("split-flap-new").html(div.html());
 					div.html(character).append(old_character);
@@ -49,57 +36,98 @@
 				}
 			}
 
-			var Character = function(character) {
-				this.current_character =  (character in options.characters) ? character : options.default_character;
+			var Character = function() {
+				this.current_character =  options.blank_character;
+				this.character = options.default_character;
+				this.div = false;
+				
+				this.rotate = function() {
+					if(this.character == this.current_character) return false;
+					var position = options.characters.indexOf(this.current_character) + 1;
+					if(position >= options.characters.length) position = 0;
+					this.current_character = options.characters[position];
+					animate_rotation(this.div,this.current_character);
+					return true;
+				}
+				
+				this.set_character = function(character) {
+					this.character = character;
+				}
+				
 				this.render = function() {
-					return $('<li>').html(this.current_character).attr(options.attrName,this.current_character);
+					return this.div = $('<li>').html(this.current_character).data('character',this);
 				}
 			}
 
 			var Line = function() {
+				this.characters = [];
+				
 				this.render = function() {
 					var div = $('<ul>').addClass(options.cssClass);
-					for(var x=0;x<options.columns;x++) div.append(new Character().render());
+					for(var x=0;x<options.columns;x++) {
+						this.characters.push(new Character());
+						div.append(this.characters[this.characters.length-1].render());
+					}
 					return div;
 				}
 			}
 
 			var Display = function(container) {
 				this.container = container;
+				this.characters = [];
+				this.lines = [];
+				
 				this.render = function() {
-					for(var x=0;x<options.rows;x++) this.container.append(new Line().render());
+					for(var x=0;x<options.rows;x++) {
+						this.lines.push(new Line());
+						this.container.append(this.lines[this.lines.length-1].render());
+					}
 				}
 				this.write = function(text) {
 					words = text.split(' ');
 					current_word = 0;
-					$('ul.'+options.cssClass,this.container).each(function() {
+					for(var x=0;x<this.lines.length;x++) {
 						if(current_word >= words.length) {
-							$('li',this).each(function() { rotate_to_character($(this)," "); });
-							return;
-						}
-						word = words[current_word];
-						characters = word.split('');
-						current_character = 0;
-						current_position = 0;
-						$('li',this).each(function() {
-							if(current_character >= characters.length) {
-								current_word++;
-								if(current_word >= words.length) {
-									rotate_to_character($(this)," ");
-									return;
-								}
-								word = words[current_word];
-								if(options.columns-current_position < word.length) return;
-								current_character = 0;
-								characters = word.split('');
-								rotate_to_character($(this)," ");
-							} else {
-								rotate_to_character($(this),characters[current_character]);
-								current_character++;
-							}
+							for(var y=0;y<this.lines[x].characters.length;y++)
+								this.lines[x].characters[y].set_character(options.blank_character);
+						} else {
+							word = words[current_word];
+							characters = word.split('');
+							current_character = 0;
 							current_position = 0;
-						});
-					});
+							for(var y=0;y<this.lines[x].characters.length;y++) {
+								if(current_character >= characters.length) {
+									current_word++;
+									if(current_word >= words.length) {
+										this.lines[x].characters[y].set_character(options.blank_character);
+									} else {
+										word = words[current_word];
+										if(options.columns-current_position >= word.length) {
+											current_character = 0;
+											characters = word.split('');
+											this.lines[x].characters[y].set_character(options.blank_character);
+										}
+									}
+								} else {
+									this.lines[x].characters[y].set_character(characters[current_character]);
+									current_character++;
+								}
+								current_position = 0;
+							}
+						}
+					}
+					var t = setInterval(function(){	
+						finishedRotating = true;
+						
+						for(var x=0;x<display.lines.length;x++) 
+							for(var y=0;y<display.lines[x].characters.length;y++) 
+								if(display.lines[x].characters[y].rotate())	
+									finishedRotating = false;
+							
+						if(finishedRotating)	clearInterval(t);
+					},options.speed);
+					
+					
 				}
 				this.link = function(url) {
 					this.container.click(function() {	window.location=url;	});
@@ -121,7 +149,7 @@
 					var position = 0;
 					this.writeItem(list[0]);
 					if(list.length == 1) return;
-					var t = setInterval(function(){	
+					var c = setInterval(function(){	
 						position++
 						if(position >= list.length) position = 0;
 						display.writeItem(list[position]);
